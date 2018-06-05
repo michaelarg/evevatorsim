@@ -1,11 +1,12 @@
 import sys,os
 import itertools
 import operator
+import collections
 from scipy.stats import truncnorm
 import numpy as np
-import matplotlib.pyplot as plt
+
 import matplotlib.animation as animation
-import matplotlib.pyplot as plt
+
 from collections import Counter
 
 class Lift:
@@ -30,57 +31,74 @@ class Lift:
         self.timedown = []
         self.unqfloors = []
         print "Lift {} has been created".format(self.id)
-    
-        
 
     #I have two agents - they want to travel together, how am I best to say these pairs must travel together
 
     def enterme(self):
         global gfloor
-        print "LIFT ENTRY FUNCTION been called"
+        global liftlist
+        print "LIFT ENTRY FUNCTION for Lift {} been called".format(self.id)
         global agentlist
+
+        #print "nothing after this??"
         
-        for per in gfloor: #unfortunately this can only put this lot of gfloor in one lift
+
+        #This should be the id of the lift with the least amount of people in it
+       
+       # [x for x in liftlist if x.active == 0 and x.currentfloor == 0 ] )
+        
+        if len(gfloor) != 0:
+            print ([len(val.inlift) for idx,val in enumerate(liftlist) ])
+            minlift = np.argmin([len(val.inlift) for idx,val in enumerate(liftlist) ])
+            print "min lift", minlift
+
+            if self.id != minlift:
+                print "Person goes for lift with least amount of people in it!"
+                return
             
-            #self.id == [idx for idx, val in enumerate(self.inlift) if val == min(self.inlift) ][0]
+            for per in gfloor: #unfortunately this can only put this lot of gfloor in one lift.
+                #YOU ARE ITERATING THROUGH A GLOBAL VARIABLE IN A PARTICULAR INSTANCE OF AN OBJECT ->
+                #What does this mean? Persons on Floor <------ Lift 1 to capacity and then Lift 2 object can take from Floor,
+                #but we want it to be as if Person can walk into a different lift at the same time.
+                #Attempted solution - control capacities, break from loop to engage next Lift object -- > seems like it would be alot slower.
 
-            #you can actually start each lift instance with a fake person
-
-            if self.occup < self.maxcap and len(self.inlift) == 0: #Every lift should hit this once!
-                print "Person {} entered lift {} which is empty right --> {} should be zero".format(per, self.id, len(self.inlift))
-                self.inlift.append(per)
-                #print "A person entered lift {}".format(self.id)
-                break
                 
-            
-            elif self.occup < self.maxcap and self.id != [idx for idx, val in enumerate(self.inlift) if val == min(self.inlift) ][0] and len(self.inlift) != 0: #and len(gfloor) != 0:
-                #This says that the lift is not at capacity and this lift is not the lift with the fewest people in it
-                #self.inlift.append(per)
-                #print "A person entered lift {}".format(self.id)
-                print "I'm not getting in the lift with that stinky bugger, choosing lift with least people"
-                break
-
-            elif self.occup < self.maxcap and self.id == [idx for idx, val in enumerate(self.inlift) if val == min(self.inlift) ][0] and len(self.inlift) != 0: #and len(gfloor) != 0:
-                self.inlift.append(per)
                 
-                print "Person {} entered lift {} which has --> {} in it".format(per, self.id, len(self.inlift))
-                break
+                
+                #self.id == [idx for idx, val in enumerate(self.inlift) if val == min(self.inlift) ][0]
 
+                #you can actually start each lift instance with a fake person
 
-                #IF I CAN'T GO IN WITH MY COLLEAGUES WE WILL WAIT
-                #IF LIFT IS OVER 70% FULL I AINT GOING IN DAT SHEET
+                if len(self.inlift) == 0: #Every lift should hit this once!
+                    print "Person {} entered lift {} which is empty right --> {} should be zero".format(per, self.id, len(self.inlift))
+                    self.inlift.append(per)
+                    #print "A person entered lift {}".format(self.id)
+                    break
+                                                                            #Not correct you are taking the min of the inlift value wtf. it needs to be the lift list.append liftlist global inlift
+                elif len(self.inlift) < self.maxcap and len(self.inlift) != 0: #and len(gfloor) != 0:
 
-                print "lift capacity of lift {} is {}".format(self.id,len(self.inlift))
+                #What is going on here?
 
-                #append everyone if count is == to arrivaltime
-                self.occup +=1
-            elif self.occup == self.maxcap:
-                print "Lift {} is at capacity!".format(self.id)
-                break
+                    self.inlift.append(per)
+                    self.occup +=1
+                    print "Person {} entered lift {} which has --> {} in it".format(per, self.id, len(self.inlift))
+                    break
+     
+                elif len(self.inlift) == self.maxcap:
+                    print "Lift {} is at capacity!".format(self.id)
+                    break
 
-            #elif self.id != [idx for idx, val in enumerate(self.inlift) if val == min(self.inlift) ][0]:
-             #   print "I aint getting in dat!"
-              #  break
+                elif len(per) == 0:
+                    print "No one in that group"
+                
+                else:
+                    print "No conditions executed - you are wrong"
+
+                #elif self.id != [idx for idx, val in enumerate(self.inlift) if val == min(self.inlift) ][0]:
+                 #   print "I aint getting in dat!"
+                  #  break
+        else:
+            print "No one is on the ground floor to pickup"
        
         gfloor = [x for x in gfloor if x not in self.inlift ]
 
@@ -180,15 +198,17 @@ class Lift:
             
         return self.flr
 
-    def tripmap(self, k, count):
+    def tripmap(self, floors, count):
         print "Called Trip Map"
         timeofevent = []
         event = []
-        print k
+        print floors
         tript=count
         print "TRIPT", tript
         
-        for i in range(1,len(k)):
+        for i in xrange(1,len(floors)): #xrange instead of range - xrange is generator object unlike range, it doesn't create a list.
+                                    #Why does xrange appear to slow this code down?
+            
             if i != 1:
                 tript = tript+1
 
@@ -196,12 +216,12 @@ class Lift:
             timeofevent.append(tript)
             event.append(eventdes)
             
-            tofloor = k[i]
-            tript = tript + (k[i]-k[i-1])*5
-            eventdes2 = "Arrived at floor {}, people getting out trip time is {} seconds".format(k[i], tript)
+            tofloor = floors[i]
+            tript = tript + (floors[i]-floors[i-1])*5
+            eventdes2 = "Arrived at floor {}, people getting out trip time is {} seconds".format(floors[i], tript)
             timeofevent.append(tript)
             event.append(eventdes2)
-            self.currentfloor = k[i]
+            self.currentfloor = floors[i]
             
             tript = tript + 5
             eventdes3 = "GTFO"
@@ -225,7 +245,7 @@ class Lift:
 
         toptime = len(master) + count #time when you arrive at the top floor
         print "toptime", toptime
-        bottomtime = toptime + (max(k) * 5) #If it takes 15 secvonds to reach the bottom floor from the top floor
+        bottomtime = toptime + (max(floors) * 5) #If it takes 15 secvonds to reach the bottom floor from the top floor
 
         times = range(toptime,bottomtime-1)
         eventattime = np.repeat("goingdown",len(times))
@@ -248,6 +268,14 @@ class Agent:
         self.arrivaltime = arrivaltime
         self.requestfloor = requestfloor
         self.company =  ["A" if x == 1 else "B" for x in [np.random.random_integers(0,1)]][0]
+        self.group = []
+        self.officeid = str(self.requestfloor) + self.company
+
+        #So a solution to this is to essentially put each agent in their own group if when on the ground floor and
+        #same floor requests come in and same company -> group those guys together.
+        
+        #If requestfloor and company are the same individual agents should group and be one object but obviously count individually towards
+        #lift capacity
 
 class Floor: 
     def __init__(self,id, occup, pressed):
@@ -256,10 +284,11 @@ class Floor:
         self.pressed = 0
 
 arrivaldist = np.random.poisson(7,1000)
-n, bins, patches = plt.hist(arrivaldist, 50, normed=1, facecolor='green', alpha=0.75)
+
 global liftseccount
 gfloor = []
-agentlist = [ Agent(int(np.random.random_integers(1, 5, 1)), i ) for i in arrivaldist]
+numberoffloors = 5
+agentlist = [ Agent(int(np.random.random_integers(1, numberoffloors, 1)), i ) for i in arrivaldist]
 
 print "Number of agents in system ->", len(agentlist)
 agentlist.sort(key = operator.attrgetter("arrivaltime"))
@@ -267,30 +296,45 @@ agentlist.sort(key = operator.attrgetter("arrivaltime"))
 liftlist = [Lift() for i in range(2)]
 liftseccount = 0
 
+#def groupGF(gfloorlist):
+
+
+def groupG(gfloor):
+    flrs = range(1,6)
+    offices = ["A","B"] #all floors and offices
+    officeids = [str(i)+j for i in flrs for j in offices] 
+    rr = dict.fromkeys(officeids)
+    rr = {x:[] for x in rr}
+
+    for agent in gfloor:
+        for key, val in rr.items():
+            if key == agent.officeid:
+                rr[key].append(agent)                
+    return rr.values()
+    
 count = 0
 while(count < 200):
     for agent in agentlist:
         if agent.arrivaltime == count:
             gfloor.append(agent)
             agentlist.pop(0)
-            
-    print "number of people on g floor", len(gfloor)
-    
-    map(lambda y: y.enterme(), [x for x in liftlist if x.active == 0 and x.currentfloor == 0 ] )
-    map(lambda y: y.move(), [x for x in liftlist if x.active == 1 and x.currentfloor == 0] )
-    map(lambda y: y.move(), [x for x in liftlist if x.active == 1 and x.currentfloor != 0] )
 
+    print 
+    if len(gfloor) != 0:
+        gfloor = groupG(gfloor)
+    
+    print "Ground Floor",gfloor
+            
+    print "number of people on g floor", sum(len(x) for x in gfloor)
+
+    if sum(len(x) for x in gfloor) != 0:
+        map(lambda y: y.enterme(), [lift for lift in liftlist if lift.active == 0 and lift.currentfloor == 0 ] )
+        print "Entry Function Finished"
+        map(lambda y: y.move(), [lift for lift in liftlist if lift.active == 1 and lift.currentfloor == 0] )
+        print "Ground Floor Move Function Complete"
+        map(lambda y: y.move(), [lift for lift in liftlist if lift.active == 1 and lift.currentfloor != 0] )
+        print "During Floor Move Function Complete"
+    
     print "Elapsed Time = {} Seconds".format(count)
     
     count += 1
-
-#every lift should be instantiated with an occupent that has a floor request of 99 or something that will never be satisfied.
-#this just makes it easier than dealing with empty sets
-
-    
-
-#Logic for which lift someone will choose when many available i.e. at start of day
-    #if they come with someone on the same floor and business - those two ride the same elevator
-    #most people will choose the closest lift open
-    #if lift over 50% full most folks will wait for another lift
-    #
