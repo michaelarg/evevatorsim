@@ -40,13 +40,6 @@ class Lift:
         print "LIFT ENTRY FUNCTION for Lift {} been called".format(self.id)
         global agentlist
 
-        #print "nothing after this??"
-        
-
-        #This should be the id of the lift with the least amount of people in it
-       
-       # [x for x in liftlist if x.active == 0 and x.currentfloor == 0 ] )
-        
         if len(gfloor) != 0:
             print ([len(val.inlift) for idx,val in enumerate(liftlist) ])
             minlift = np.argmin([len(val.inlift) for idx,val in enumerate(liftlist) ])
@@ -56,28 +49,18 @@ class Lift:
                 print "Person goes for lift with least amount of people in it!"
                 return
             
-            for per in gfloor: #unfortunately this can only put this lot of gfloor in one lift.
-                #YOU ARE ITERATING THROUGH A GLOBAL VARIABLE IN A PARTICULAR INSTANCE OF AN OBJECT ->
-                #What does this mean? Persons on Floor <------ Lift 1 to capacity and then Lift 2 object can take from Floor,
-                #but we want it to be as if Person can walk into a different lift at the same time.
-                #Attempted solution - control capacities, break from loop to engage next Lift object -- > seems like it would be alot slower.
+            for per in gfloor:
 
-                
-                
-                
-                #self.id == [idx for idx, val in enumerate(self.inlift) if val == min(self.inlift) ][0]
-
-                #you can actually start each lift instance with a fake person
-
-                if len(self.inlift) == 0: #Every lift should hit this once!
+                if len(per) == 0:
+                    print "BREAK"
+                    break
+                        
+                elif len(self.inlift) == 0: 
                     print "Person {} entered lift {} which is empty right --> {} should be zero".format(per, self.id, len(self.inlift))
                     self.inlift.append(per)
-                    #print "A person entered lift {}".format(self.id)
                     break
                                                                             #Not correct you are taking the min of the inlift value wtf. it needs to be the lift list.append liftlist global inlift
                 elif len(self.inlift) < self.maxcap and len(self.inlift) != 0: #and len(gfloor) != 0:
-
-                #What is going on here?
 
                     self.inlift.append(per)
                     self.occup +=1
@@ -87,22 +70,14 @@ class Lift:
                 elif len(self.inlift) == self.maxcap:
                     print "Lift {} is at capacity!".format(self.id)
                     break
-
-                elif len(per) == 0:
-                    print "No one in that group"
                 
                 else:
                     print "No conditions executed - you are wrong"
 
-                #elif self.id != [idx for idx, val in enumerate(self.inlift) if val == min(self.inlift) ][0]:
-                 #   print "I aint getting in dat!"
-                  #  break
         else:
             print "No one is on the ground floor to pickup"
        
         gfloor = [x for x in gfloor if x not in self.inlift ]
-
-        #del gfloor[0:len(self.inlift)]
 
         print "Folks remaining on ground floor", len(gfloor)
         print "There are {} Folks in lift {} ".format(len(self.inlift), self.id)
@@ -338,3 +313,9 @@ while(count < 200):
     print "Elapsed Time = {} Seconds".format(count)
     
     count += 1
+
+'''
+python -m cProfile -o script.profile script.py
+pyprof2calltree -i script.profile -o script.calltree
+kcachegrind script.calltree
+'''
